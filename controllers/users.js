@@ -17,7 +17,8 @@ function getUser(req, res, next) {
       if (!user) {
         throw new NotFoundError(NO_FOUND_USER);
       } else {
-        res.send({ data: user });
+        const { name, email } = user;
+        res.send({ name, email });
       }
     })
     .catch(next);

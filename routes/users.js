@@ -10,7 +10,6 @@ router.get('/users/me', celebrate({
     _id: Joi.string().required().length(24),
     name: Joi.string().required().min(2).max(30),
     email: Joi.string().required().email(),
-    prevPassword: Joi.array().items(),
   }),
 }), getUser);
 
