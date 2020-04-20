@@ -3,7 +3,10 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Unauthorized = require('../errors/Unauthorized');
 const NotFoundError = require('../errors/NotFoundError');
-const { NO_FOUND_USER, ERROR_EMAIL_NAME, NO_USER_ID } = require('../CONST/MESSAGE');
+const {
+  NO_FOUND_USER, ERROR_EMAIL_NAME, NO_USER_ID, YES_USER, YES_EMAIL, ERROR_PASSWORD,
+} = require('../CONST/MESSAGE');
+
 const { DEV_SECRET } = require('../CONST/DEV_SECRET');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
@@ -40,21 +43,34 @@ function login(req, res, next) {
 }
 
 function createUser(req, res, next) {
-  bcrypt.hash(req.body.password, 10)
-    .then((hash) => User.create({
-      name: req.body.name,
-      email: req.body.email,
-      password: hash,
-      prevPassword: hash,
-    }))
-    .then((user) => {
-      if (!user) {
-        throw new NotFoundError(NO_USER_ID);
+  const { name, email, password } = req.body;
+  User.findOne({ email })
+    .then((hasEmail) => {
+      if (hasEmail) {
+        throw new NotFoundError(YES_EMAIL);
       }
-      res.status(201).send({
-        _id: user._id,
-        email: user.email,
-      });
+    })
+    .catch(next);
+  User.findOne({ name })
+    .then((user) => {
+      if (user) {
+        throw new NotFoundError(YES_USER);
+      } else {
+        bcrypt.hash(password, 10)
+          .then((hash) => User.create({
+            name,
+            email,
+            password: hash,
+            prevPassword: hash,
+          }))
+          .then((data) => {
+            res.status(201).send({
+              _id: data._id,
+              email: data.email,
+            });
+          })
+          .catch(next);
+      }
     })
     .catch(next);
 }
@@ -76,7 +92,7 @@ function changePassword(req, res, next) {
         .then((hash) => {
           const hasPassword = hasPasswordElements.some((hasFalse) => hasFalse === true);
           if (hasPassword) {
-            throw new NotFoundError('Данный пароль вами был использован. Введите другой пароль');
+            throw new NotFoundError(ERROR_PASSWORD);
           }
           if (prevPassword.length >= 5) {
             User.findOneAndUpdate({ name }, {
