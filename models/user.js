@@ -31,6 +31,11 @@ const userSchema = new mongoose.Schema({
   prevPassword: {
     type: Array,
   },
+  newpassword: {
+    type: String,
+    minlength: 8,
+    select: false,
+  },
 });
 
 userSchema.statics.findUserByCredentials = function check(name, password) {
