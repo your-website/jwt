@@ -77,19 +77,28 @@ function createUser(req, res, next) {
 }
 
 function changePassword(req, res, next) {
-  const { name, password } = req.body;
+  const { name, password, newpassword } = req.body;
   const hasPasswordElements = [];
+
+  User.findUserByCredentials(name, password)
+    .then((user) => {
+      if (!user) {
+        throw new Unauthorized(ERROR_EMAIL_NAME);
+      }
+    })
+    .catch(() => next(new Unauthorized(ERROR_EMAIL_NAME)));
+
   User.findOne({ name })
     .then((data) => {
       const { prevPassword } = data;
       prevPassword.forEach(async (element) => {
-        const matched = await bcrypt.compare(password, element);
+        const matched = await bcrypt.compare(newpassword, element);
         hasPasswordElements.push(matched);
       });
       return prevPassword;
     })
     .then((prevPassword) => {
-      bcrypt.hash(password, 10)
+      bcrypt.hash(newpassword, 10)
         .then((hash) => {
           const hasPassword = hasPasswordElements.some((hasFalse) => hasFalse === true);
           if (hasPassword) {
